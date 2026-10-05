@@ -1,0 +1,56 @@
+# Static linker configuration for libhybris on this Halium port.
+#
+# DO NOT bake this into the system image until it has been validated at runtime
+# (see recovery/test-ldconfig.sh). A previous attempt shipped a version with
+#     additional.namespaces = default
+# which is INVALID -- linkerconfig never lists "default" there
+# (system/linkerconfig/modules/section.cc: `if (ns.GetName() != "default")`).
+# The Android linker failed to parse it, every libhybris library load broke, and
+# the device did not boot at all.
+#
+# WHY A STATIC CONFIG IS NEEDED:
+# libhybris' linker (libhybris/linker/q.so) reads
+#     /linkerconfig/ld.config.txt   -- absent; Ubuntu / is read-only
+#     /system/etc/ld.config.txt     -- this file (/system -> /android/system)
+# Android would normally generate the first at runtime, but linkerconfig aborts:
+#     Unable to access VNDK APEX at path: /apex/com.android.vndk.v30
+#     Check failed: !"undefined var" SANITIZER_DEFAULT_VENDOR is not defined
+# because the stock vendor sets ro.vndk.version=30 and an Android 14 tree has no
+# VNDK 30 APEX. With no config, libhybris cannot find /vendor/lib64/egl, so
+#     library "eglSubDriverAndroid.so" not found
+# and lomiri-system-compositor dies before lightdm can start.
+#
+# libhybris loads Android libraries into an ordinary Linux process, so Android's
+# system/vendor namespace isolation is not meaningful for this consumer; one
+# permissive namespace is the right shape.
+
+# ld.config maps EXECUTABLE paths to sections. The consumers here are Ubuntu
+# binaries (lomiri-system-compositor lives in /usr/sbin), so the Ubuntu paths
+# MUST be listed or no section matches and the config is ignored entirely --
+# which is exactly what happened on the first isolated test.
+dir.system = /system/bin/
+dir.system = /system/xbin/
+dir.system = /system/system_ext/bin/
+dir.system = /vendor/bin/
+dir.system = /odm/bin/
+dir.system = /usr/bin/
+dir.system = /usr/sbin/
+dir.system = /usr/libexec/
+dir.system = /bin/
+dir.system = /sbin/
+
+[system]
+namespace.default.isolated = false
+namespace.default.search.paths  = /system/${LIB}
+namespace.default.search.paths += /system/${LIB}/vndk-sp
+namespace.default.search.paths += /system/system_ext/${LIB}
+namespace.default.search.paths += /system/product/${LIB}
+namespace.default.search.paths += /vendor/${LIB}
+namespace.default.search.paths += /vendor/${LIB}/egl
+namespace.default.search.paths += /vendor/${LIB}/hw
+namespace.default.search.paths += /odm/${LIB}
+namespace.default.search.paths += /odm/${LIB}/hw
+namespace.default.permitted.paths  = /system
+namespace.default.permitted.paths += /vendor
+namespace.default.permitted.paths += /odm
+namespace.default.permitted.paths += /data
