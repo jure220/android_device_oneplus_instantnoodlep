@@ -57,3 +57,24 @@ $(call inherit-product, device/oneplus/sm8250-common/common.mk)
 
 # Inherit from the proprietary files makefile.
 $(call inherit-product, vendor/oneplus/instantnoodlep/instantnoodlep-vendor.mk)
+
+# Software (codec2) codec list, for processes that cannot see the swcodec APEX.
+#
+# Codec2InfoBuilder parses /apex/com.android.media.swcodec/etc/media_codecs.xml
+# for the c2.android.* components. APEX mounts are per-mount-namespace, and
+# Ubuntu-side processes live in the HOST namespace where that path does not
+# exist -- so every software codec was listed by the codec2 store and then
+# dropped with "component 'c2.android.aac.encoder' not found in xml", leaving
+# video recording with no audio encoder. The hardware OMX codecs were fine
+# because /vendor is a symlink into the container rootfs and IS visible.
+#
+# media_codecs_c2.xml is an alternate name the same parser already looks for in
+# the default search dirs (/product/etc, /odm/etc, /vendor/etc, /system/etc).
+# /odm is a tmpfs here, so it goes in /system/etc, which is part of this image.
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/media/media_codecs_c2.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/media_codecs_c2.xml
+
+# dispcfg -- sets the panel's refresh-rate config through the QTI vendor
+# IDisplayConfig interface. See halium-display-mode.service.
+PRODUCT_PACKAGES += \
+    dispcfg

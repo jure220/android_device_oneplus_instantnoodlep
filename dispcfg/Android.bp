@@ -1,0 +1,16 @@
+cc_binary {
+    name: "dispcfg",
+    vendor: true,
+    srcs: ["dispcfg.cpp"],
+    shared_libs: [
+        "libdisplayconfig.qti",
+        "libhidlbase",
+        "liblog",
+        "libutils",
+    ],
+    header_libs: ["display_intf_headers"],
+    cflags: [
+        "-Wall",
+        "-Wno-unused-parameter",
+    ],
+}

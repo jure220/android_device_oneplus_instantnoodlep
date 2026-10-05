@@ -1,2 +1,9 @@
 soong_namespace {
+    // Imported so modules in this device directory (dispcfg) can link against
+    // the QTI display config client. Both namespaces are needed: the library
+    // lives in .../opensource/display, its headers in .../commonsys-intf/display.
+    imports: [
+        "vendor/qcom/opensource/display",
+        "vendor/qcom/opensource/commonsys-intf/display",
+    ],
 }
